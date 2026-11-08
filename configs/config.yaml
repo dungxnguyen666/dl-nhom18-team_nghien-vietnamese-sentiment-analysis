@@ -1,0 +1,51 @@
+project:
+  name: "dl-nhom18-vietnamese-sentiment-analysis"
+  seed: 42
+  device: "cuda" # Tự động chuyển về 'cpu' nếu máy không có GPU
+
+paths:
+  raw_dir: "data/raw"
+  train_data: "data/processed/train.csv"
+  val_data: "data/processed/val.csv"
+  test_data: "data/processed/test.csv"
+  pretrained_w2v: "data/embeddings/word2vec_vi_words_300dims.txt"
+  checkpoints_dir: "models/checkpoints"
+  logs_dir: "logs"
+
+preprocessing:
+  normalize_unicode: true
+  normalize_teencode: true
+  normalize_emoji: true
+  use_word_segmentation: true  # Ablation 1: true (Word-level) vs false (Syllable-level)
+  remove_diacritics: false     # Ablation 2: true (Không dấu) vs false (Có dấu)
+
+models:
+  baseline_tfidf:
+    max_features: 10000
+    ngram_range: [1, 2]
+    c_param: 1.0
+    class_weight: "balanced"
+
+  bilstm:
+    embedding_dim: 300
+    hidden_dim: 128
+    num_layers: 2
+    dropout: 0.3
+    bidirectional: true
+    freeze_embeddings: false
+    lr: 1.0e-3
+    max_length: 100
+    vocab_size: 15000
+
+  phobert:
+    pretrained_name: "vinai/phobert-base-v2"
+    max_length: 128
+    learning_rate: 2.0e-5
+    weight_decay: 0.01
+    warmup_ratio: 0.1
+
+training:
+  batch_size: 32
+  epochs: 5
+  early_stopping_patience: 2
+  wandb_project: "dl-nhom18-topic6-sentiment"
