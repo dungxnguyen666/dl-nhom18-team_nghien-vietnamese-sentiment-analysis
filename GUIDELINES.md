@@ -29,3 +29,45 @@ Tài liệu này tổng hợp toàn bộ quy tắc kỹ thuật từ `README.md`
   `sentence, clean_sentence, true_label, pred_label, prob_neg, prob_neu, prob_pos, is_correct`
 - Phân tích sâu các ca lỗi kinh điển: câu mỉa mai (sarcasm), câu 2 vế khen-chê đối lập, teencode/không dấu.
 
+---
+
+## 5. QUY CHUẨN QUẢN LÝ MÃ NGUỒN & HƯỚNG DẪN GIT COMMIT
+
+Để tránh xung đột code giữa 3 thành viên (merge conflict) và tuyệt đối không làm nặng GitHub repo dẫn đến lỗi push/pull, mọi thành viên bắt buộc phải tuân thủ nghiêm ngặt các quy tắc dưới đây:
+
+### 5.1. Nguyên tắc cốt lõi (Core Principles)
+1. **Tuyệt đối KHÔNG commit dữ liệu và trọng số:** 
+   - Không commit các thư mục `data/raw/`, `data/processed/`, `data/embeddings/`.
+   - Không commit file nhị phân checkpoint mô hình (`.pt`, `.bin`, `.joblib`, `.onnx`).
+   - Không commit logs đánh giá test (`logs/*.csv`) và thư mục môi trường ảo (`.venv/`, `venv/`).
+2. **Luôn kiểm tra trạng thái trước khi commit:**
+   - Trước khi `git add`, luôn chạy `git status` để đảm bảo không có file nặng nào lọt vào staging area.
+
+### 5.2. Phân loại File NÊN và CẤM Commit
+
+| Trạng thái | Danh sách file / thư mục |
+| :--- | :--- |
+| **ĐƯỢC PHÉP COMMIT** | • Mã nguồn (`src/`, `train.py`, `evaluate.py`, `app.py`).<br>• Cấu hình & Quản trị (`configs/config.yaml`, `requirements.txt`, `.gitignore`).<br>• Tài liệu hướng dẫn (`README.md`, `GUIDELINES.md`).<br>• Notebooks (chỉ lưu code, **phải Clear Outputs** trước khi commit).<br>• Các file `.gitkeep` để giữ cấu trúc thư mục rỗng. |
+| **CẤM COMMIT** *(Đã chặn bằng `.gitignore`)* | • Dữ liệu: `data/processed/*.csv`, `data/raw/*`.<br>• Embeddings: `data/embeddings/*` (PhoW2V, fastText).<br>• Trọng số mô hình: `models/checkpoints/*.pt`, `*.bin`, `*.joblib`.<br>• Logs chi tiết: `logs/*.csv`, `wandb/`, `runs/`.<br>• Môi trường: `venv/`, `.env`, `__pycache__/`. |
+
+---
+
+### 5.3. Quy chuẩn viết Commit Message (Conventional Commits)
+Thông điệp commit phải ngắn gọn, rõ ràng theo cấu trúc: `<loại_thay_đổi>: <mô tả ngắn bằng tiếng Anh hoặc tiếng Việt>`
+
+* `feat:` Thêm tính năng mới hoặc mô hình mới (VD: `feat: implement bilstm with masked mean pooling`).
+* `fix:` Sửa lỗi logic hoặc lỗi xử lý văn bản (VD: `fix: handle edge cases in teencode normalization`).
+* `refactor:` Tối ưu hóa code mà không thay đổi chức năng (VD: `refactor: optimize DataLoader memory footprint`).
+* `docs:` Cập nhật tài liệu (VD: `docs: update guidelines with git commit rules`).
+* `chore:` Cập nhật dependencies, cấu hình yaml hoặc gitignore (VD: `chore: add gitkeep and update requirements.txt`).
+
+---
+
+### 5.4. Quy trình thực hiện Git Commit chuẩn từng bước (CLI / PowerShell)
+
+Mỗi khi hoàn thành một chức năng, thành viên thực hiện đúng 5 bước sau:
+
+#### Bước 1: Kéo code mới nhất từ nhánh chính về
+Tránh bị lệch code so với các thành viên khác:
+```bash
+git pull origin main
