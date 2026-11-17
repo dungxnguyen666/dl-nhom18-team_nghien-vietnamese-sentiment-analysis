@@ -1,41 +1,49 @@
 import argparse
 import os
-import pandas as pd
+
 from datasets import load_dataset
 
+PRIMARY_REPO = "tridm/UIT-VSFC"
+FALLBACK_REPO = "uitnlp/vietnamese_students_feedback"
+SPLIT_MAP = {"train": "train", "validation": "val", "test": "test"}
 
-def download_and_prepare_vsfc(output_dir: str = "data/raw"):
-    """
-    Tải tập dữ liệu UIT-VSFC từ HuggingFace và xuất thành 3 file CSV cố định (train, val, test).
-    Đồng bộ với cấu hình trong configs/config.yaml.
-    """
-    os.makedirs(output_dir, exist_ok=True)
-    print(f"⏳ Đang tải tập dữ liệu UIT-VSFC từ HuggingFace (repo Parquet chuẩn: tridm/UIT-VSFC)...")
 
+def load_vsfc():
     try:
-        dataset = load_dataset("tridm/UIT-VSFC")
+        return load_dataset(PRIMARY_REPO)
     except Exception as e:
-        print(f"⚠️ Fallback uitnlp/vietnamese_students_feedback... ({e})")
-        dataset = load_dataset("uitnlp/vietnamese_students_feedback", trust_remote_code=True)
+        print(f"⚠️ Không tải được {PRIMARY_REPO} ({e}). Thử {FALLBACK_REPO}...")
+        return load_dataset(FALLBACK_REPO)
 
-    for split in ["train", "validation", "test"]:
-        df = pd.DataFrame(dataset[split])
-        split_name = "val" if split == "validation" else split
-        save_path = os.path.join(output_dir, f"{split_name}.csv")
-        df.to_csv(save_path, index=False, encoding="utf-8-sig")
-        print(f"✅ Đã xuất {split_name}.csv: {len(df)} mẫu -> {save_path}")
+
+def download_and_prepare_vsfc(output_dir: str = "data/raw", force: bool = False):
+    os.makedirs(output_dir, exist_ok=True)
+
+    targets = {s: os.path.join(output_dir, f"{n}.csv") for s, n in SPLIT_MAP.items()}
+    if not force and all(os.path.exists(p) for p in targets.values()):
+        print("✅ Dữ liệu đã có sẵn, bỏ qua (dùng --force để tải lại).")
+        return
+
+    print("⏳ Đang tải UIT-VSFC từ HuggingFace...")
+    dataset = load_vsfc()
+
+    missing = [s for s in SPLIT_MAP if s not in dataset]
+    if missing:
+        raise KeyError(f"Thiếu split {missing}; các split hiện có: {list(dataset.keys())}")
+
+    for split, path in targets.items():
+        df = dataset[split].to_pandas()
+        df.to_csv(path, index=False, encoding="utf-8-sig")
+        print(f"✅ {os.path.basename(path)}: {len(df)} mẫu -> {path}")
 
     print("\n🎉 Hoàn thành tải và chuẩn bị dữ liệu UIT-VSFC!")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Tải tập dữ liệu UIT-VSFC từ HuggingFace")
-    parser.add_argument(
-        "--output_dir",
-        type=str,
-        default="data/raw",
-        help="Thư mục lưu các file CSV (mặc định: data/raw)",
-    )
+    parser.add_argument("--output_dir", type=str, default="data/raw",
+                        help="Thư mục lưu các file CSV (mặc định: data/raw)")
+    parser.add_argument("--force", action="store_true", help="Tải lại dù file đã tồn tại")
     args = parser.parse_args()
 
-    download_and_prepare_vsfc(output_dir=args.output_dir)
+    download_and_prepare_vsfc(output_dir=args.output_dir, force=args.force)
